@@ -1,0 +1,55 @@
+version: "3.9"
+services:
+  cassandra:
+    image: cassandra:4.1
+    container_name: cassandra
+    ports: ["9042:9042"]
+    environment:
+      CASSANDRA_CLUSTER_NAME: "ScenarioDemo"
+      MAX_HEAP_SIZE: 1G
+      HEAP_NEWSIZE: 256M
+    healthcheck:
+      test: ["CMD-SHELL", "cqlsh -e 'describe keyspaces' 127.0.0.1 9042"]
+      interval: 10s
+      timeout: 5s
+      retries: 40
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "1"
+
+  cassandra-init:
+    image: cassandra:4.1
+    depends_on:
+      cassandra:
+        condition: service_healthy
+    volumes:
+      - ./init.cql:/init.cql:ro
+    entrypoint: [ "bash", "-lc", "until cqlsh cassandra -e 'describe cluster'; do echo waiting; sleep 2; done; cqlsh cassandra -f /init.cql" ]
+
+  zookeeper:
+    image: zookeeper:3.9
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      ZOO_4LW_COMMANDS_WHITELIST: "ruok"
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "1"
+
+  mimir:
+    image: "grafana/mimir:2.11.0"
+    volumes:
+      - ./mimir/single-process-config-blocks.yml:/etc/single-process-config-blocks.yml
+    ports:
+      - "10100"
+      - "10101"
+    command:
+      - "-config.expand-env=true"
+      - "-config.file=/etc/single-process-config-blocks.yml"
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "1"

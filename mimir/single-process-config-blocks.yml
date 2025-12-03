@@ -1,0 +1,77 @@
+# Configuration for running Mimir in single-process mode.
+# This should not be used in production.  It is only for getting started
+# and development.
+
+target: all
+
+multitenancy_enabled: true
+
+server:
+  http_listen_port: 10100
+  grpc_listen_port: 10101
+
+  grpc_server_max_recv_msg_size: 104857600
+  grpc_server_max_send_msg_size: 104857600
+  grpc_server_max_concurrent_streams: 1000
+
+distributor:
+  pool:
+    health_check_ingesters: false
+  ring:
+    kvstore:
+      store: inmemory
+
+ingester_client:
+  grpc_client_config:
+    max_recv_msg_size: 104857600
+    max_send_msg_size: 104857600
+    grpc_compression: gzip
+
+ingester:
+  ring:
+    final_sleep: 0s
+    num_tokens: 512
+    kvstore:
+      store: inmemory
+    replication_factor: 1
+
+blocks_storage:
+  tsdb:
+    dir: /tmp/cortex/tsdb
+
+  bucket_store:
+    sync_dir: /tmp/cortex/tsdb-sync
+
+  backend: filesystem
+  filesystem:
+    dir: ./data/tsdb
+
+api:
+  prometheus_http_prefix: /api/prom
+
+compactor:
+  data_dir: /tmp/cortex/compactor
+  sharding_ring:
+    kvstore:
+      store: inmemory
+
+ruler:
+  rule_path: /tmp/cortex/rules
+  enable_api: true
+  ring:
+    kvstore:
+      store: inmemory
+
+ruler_storage:
+  backend: filesystem
+  filesystem:
+    dir: ./data/rule
+
+store_gateway:
+  sharding_ring:
+    kvstore:
+      store: inmemory
+
+limits:
+  accept_ha_samples: true
+  out_of_order_time_window: 40d
