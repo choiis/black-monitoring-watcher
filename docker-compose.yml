@@ -44,8 +44,8 @@ services:
     volumes:
       - ./mimir/single-process-config-blocks.yml:/etc/single-process-config-blocks.yml
     ports:
-      - "10100"
-      - "10101"
+      - "10100:10100"
+      - "10101:10101"
     command:
       - "-config.expand-env=true"
       - "-config.file=/etc/single-process-config-blocks.yml"
@@ -53,3 +53,7 @@ services:
       options:
         max-size: "10m"
         max-file: "1"
+  grafana:
+    image: grafana/grafana:8.0.2
+    ports:
+      - "13030:3000"

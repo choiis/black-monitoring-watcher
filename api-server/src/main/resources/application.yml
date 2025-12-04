@@ -4,10 +4,9 @@ server:
 spring:
   application:
     name: monitoring-api
-  data:
-    cassandra:
-      contact-points: [ "cassandra" ]
-      port: 9042
-      keyspace-name: monitoring
-      local-datacenter: datacenter1
-      schema-action: none
+  cassandra:
+    contact-points: [ "cassandra" ]
+    port: 9042
+    keyspace-name: monitoring
+    local-datacenter: datacenter1
+    schema-action: none
