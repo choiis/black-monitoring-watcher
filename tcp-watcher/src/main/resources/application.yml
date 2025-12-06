@@ -10,6 +10,19 @@ spring:
     keyspace-name: monitoring
     local-datacenter: datacenter1
     schema-action: none
-
+  mail:
+    host: localhost
+    port: 1025
+    username:
+    password:
+    properties:
+      mail:
+        smtp:
+          auth: false
+          starttls:
+            enable: false
 zookeeper:
   connect-string: localhost:2181
+
+api-server:
+  base-url: http://localhost:7080

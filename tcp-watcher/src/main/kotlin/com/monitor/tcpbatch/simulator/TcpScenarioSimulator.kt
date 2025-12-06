@@ -1,6 +1,8 @@
 package com.monitor.tcpbatch.simulator
 
+import com.monitor.api.client.AlertClient
 import com.monitor.api.domain.TcpScenario
+import com.monitor.api.dto.AlertRequest
 import com.monitor.api.mimir.MimirMetricPusher
 import com.monitor.tcpbatch.worker.TcpScenarioBatchWorker
 import org.slf4j.LoggerFactory
@@ -20,7 +22,8 @@ import java.nio.charset.StandardCharsets
 @Component
 class TcpScenarioSimulator(
     private val batchWorker: TcpScenarioBatchWorker,
-    private val mimirMetricPusher: MimirMetricPusher
+    private val mimirMetricPusher: MimirMetricPusher,
+    private val alertClient: AlertClient
 ) {
 
     private val log = LoggerFactory.getLogger(TcpScenarioSimulator::class.java)
@@ -113,6 +116,31 @@ class TcpScenarioSimulator(
             Triple(dnsMs, connectMs, commMs)
         }
             .subscribeOn(Schedulers.boundedElastic())
+            .onErrorResume { ex ->
+                log.warn(
+                    "Failed to simulate TCP scenario for {}:{} - {}",
+                    host,
+                    port,
+                    ex.toString(),
+                )
+
+                alertClient.sendAlert(
+                    AlertRequest(
+                        serviceUuid = scenario.key?.serviceUuid!!,
+                        scenarioUuid = scenario.key?.scenarioUuid!!,
+                        serviceName = scenario.serviceName ?: "unknown"
+                    )
+                )
+                    .onErrorResume { alertEx ->
+                        log.warn(
+                            "Failed to send TCP alert: scenarioUuid={}, reason={}",
+                            scenario.key?.scenarioUuid,
+                            alertEx.toString()
+                        )
+                        Mono.empty()
+                    }
+                    .then(Mono.empty())
+            }
             .flatMap { (dnsMs, connectMs, commMs) ->
                 val labels: Map<String, String> = mapOf(
                     "scenario_uuid" to (scenario.key?.scenarioUuid?.toString() ?: ""),

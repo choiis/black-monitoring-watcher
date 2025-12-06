@@ -1,7 +1,9 @@
 package com.monitor.apibatch.simulator
 
+import com.monitor.api.client.AlertClient
 import com.monitor.apibatch.worker.ApiScenarioBatchWorker
 import com.monitor.api.domain.ApiScenario
+import com.monitor.api.dto.AlertRequest
 import com.monitor.api.mimir.MimirMetricPusher
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpMethod
@@ -20,7 +22,8 @@ import java.time.Duration
 class ApiScenarioSimulator(
     private val batchWorker: ApiScenarioBatchWorker,
     private val webClient: WebClient,
-    private val mimirMetricPusher: MimirMetricPusher
+    private val mimirMetricPusher: MimirMetricPusher,
+    private val alertClient: AlertClient
 ) {
 
     private val log = LoggerFactory.getLogger(ApiScenarioSimulator::class.java)
@@ -51,14 +54,14 @@ class ApiScenarioSimulator(
         val method = try {
             HttpMethod.valueOf(methodStr.uppercase())
         } catch (ex: IllegalArgumentException) {
-            log.warn("Unsupported HTTP method '{}' for scenario: {}", methodStr, scenario)
+            log.warn("Unsupported HTTP method '{}' for scenario: {}", methodStr, scenario, ex)
             return Mono.empty()
         }
 
         val uri = try {
             URI.create(url)
         } catch (ex: IllegalArgumentException) {
-            log.warn("Invalid URL '{}' for scenario: {}", url, scenario)
+            log.warn("Invalid URL '{}' for scenario: {}", url, scenario, ex)
             return Mono.empty()
         }
 
@@ -112,7 +115,6 @@ class ApiScenarioSimulator(
 
                             val serviceUuid = scenario.key?.serviceUuid
 
-                            // 메트릭 2개: DNS, API 요청 시간
                             Mono.zip(
                                 mimirMetricPusher.pushMetric(
                                     serviceUuid,
@@ -127,10 +129,34 @@ class ApiScenarioSimulator(
                                     labels = labels
                                 )
                             ).then()
-
                         }
-                }
-                .timeout(Duration.ofSeconds(10))
-        }.then()
+                        .timeout(Duration.ofSeconds(10))
+                        .onErrorResume { ex ->
+                            log.warn(
+                                "API scenario failed or timed out: scenarioUuid={}, url={}, reason={}",
+                                scenario.key?.scenarioUuid,
+                                url,
+                                ex.toString()
+                            )
+
+                            alertClient.sendAlert(
+                                AlertRequest(
+                                    serviceUuid = scenario.key?.serviceUuid!!,
+                                    scenarioUuid = scenario.key?.scenarioUuid!!,
+                                    serviceName = scenario.serviceName ?: "unknown"
+                                )
+                            )
+                                .onErrorResume { alertEx ->
+                                    log.warn(
+                                        "Failed to send API alert: scenarioUuid={}, reason={}",
+                                        scenario.key?.scenarioUuid,
+                                        alertEx.toString()
+                                    )
+                                    Mono.empty()
+                                }
+                                .then(Mono.empty())
+                        }
+                }.then()
+        }
     }
 }

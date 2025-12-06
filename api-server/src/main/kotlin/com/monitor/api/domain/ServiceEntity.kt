@@ -18,5 +18,8 @@ data class ServiceEntity(
     var description: String? = null,
 
     @Column("updated_time")
-    var updatedTime: Instant? = null
+    var updatedTime: Instant? = null,
+
+    @Column("email")
+    var email: String? = null
 )

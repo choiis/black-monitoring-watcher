@@ -10,6 +10,22 @@ spring:
     keyspace-name: monitoring
     local-datacenter: datacenter1
     schema-action: none
+  codec:
+    max-in-memory-size: 1MB  # 1 * 1024 * 1024
+  mail:
+    host: localhost
+    port: 1025
+    username:
+    password:
+    properties:
+      mail:
+        smtp:
+          auth: false
+          starttls:
+            enable: false
 
 zookeeper:
   connect-string: localhost:2181
+
+api-server:
+  base-url: http://localhost:7080

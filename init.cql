@@ -6,7 +6,8 @@ CREATE TABLE IF NOT EXISTS service (
     uuid timeuuid PRIMARY KEY,
     service_name text,
     description text,
-    updated_time timestamp
+    updated_time timestamp,
+    email text
 );
 
 CREATE TABLE IF NOT EXISTS api_scenario (
@@ -38,48 +39,53 @@ PRIMARY KEY (service_uuid, scenario_uuid)
 USE monitoring;
 
 INSERT INTO service (
-    uuid, service_name, description, updated_time
+    uuid, service_name, description, updated_time, email
 ) VALUES (
     minTimeuuid('2025-01-01T10:00:00Z'),
     'user-service',
     'User account management service',
-    toTimestamp(now())
+    toTimestamp(now()),
+    'choiis1207@gmail.com'
 );
 
 INSERT INTO service (
-    uuid, service_name, description, updated_time
+    uuid, service_name, description, updated_time, email
 ) VALUES (
     minTimeuuid('2025-01-01T10:01:00Z'),
     'order-service',
     'Order and cart management service',
-    toTimestamp(now())
+    toTimestamp(now()),
+    'choiis1207@gmail.com'
 );
 
 INSERT INTO service (
-    uuid, service_name, description, updated_time
+    uuid, service_name, description, updated_time, email
 ) VALUES (
     minTimeuuid('2025-01-01T10:02:00Z'),
     'payment-service',
     'Payment processing service',
-    toTimestamp(now())
+    toTimestamp(now()),
+    'choiis1207@gmail.com'
 );
 
 INSERT INTO service (
-    uuid, service_name, description, updated_time
+    uuid, service_name, description, updated_time, email
 ) VALUES (
     minTimeuuid('2025-01-01T10:03:00Z'),
     'notification-service',
     'Email / SMS / push notification service',
-    toTimestamp(now())
+    toTimestamp(now()),
+    'choiis1207@gmail.com'
 );
 
 INSERT INTO service (
-    uuid, service_name, description, updated_time
+    uuid, service_name, description, updated_time, email
 ) VALUES (
     minTimeuuid('2025-01-01T10:04:00Z'),
     'reporting-service',
     'Reporting and analytics service',
-    toTimestamp(now())
+    toTimestamp(now()),
+    'choiis1207@gmail.com'
 );
 
 INSERT INTO api_scenario (
