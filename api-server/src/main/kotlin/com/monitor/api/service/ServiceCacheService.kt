@@ -24,25 +24,27 @@ class ServiceCacheServiceImpl(
 
     private val cache: MutableMap<UUID, CacheEntry> = ConcurrentHashMap()
 
-    // Cache TTL: 5 minute
+    // Cache TTL: 5 minutes
     private val ttlMillis: Long = Duration.ofMinutes(5).toMillis()
 
     override fun findById(serviceUuid: UUID?): Mono<ServiceEntity> {
-        val now = System.currentTimeMillis()
+        return Mono.defer {
+            val id = serviceUuid ?: return@defer Mono.empty<ServiceEntity>()
 
-        // 1) Cache call
-        val entry = cache[serviceUuid]
-        if (entry != null && now - entry.cachedAtMillis <= ttlMillis) {
-            return Mono.just(entry.value)
-        }
+            val now = System.currentTimeMillis()
+            val entry = cache[id]
 
-        // 2) After TTL Cassandra Select
-        return serviceRepository.findById(serviceUuid!!)
-            .doOnNext { entity ->
-                cache[serviceUuid] = CacheEntry(
-                    value = entity,
-                    cachedAtMillis = now
-                )
+            if (entry != null && now - entry.cachedAtMillis <= ttlMillis) {
+                return@defer Mono.just(entry.value)
             }
+
+            serviceRepository.findById(id)
+                .doOnNext { entity ->
+                    cache[id] = CacheEntry(
+                        value = entity,
+                        cachedAtMillis = System.currentTimeMillis()
+                    )
+                }
+        }
     }
 }

@@ -1,0 +1,38 @@
+spring:
+  main:
+    web-application-type: reactive
+
+  data:
+    cassandra:
+      contact-points: localhost
+      port: 19042
+      keyspace-name: test_keyspace
+      schema-action: NONE
+
+  mail:
+    host: localhost
+    port: 2525
+    username: test
+    password: test
+    properties:
+      mail:
+        smtp:
+          auth: false
+          starttls:
+            enable: false
+
+logging:
+  level:
+    root: INFO
+    com.monitor: DEBUG
+
+mimir:
+  url: http://localhost:10100
+
+monitoring-api:
+  base-url: http://localhost:7080
+
+zookeeper:
+  connect-string: localhost:2181
+  session-timeout-ms: 10000
+  connection-timeout-ms: 10000
