@@ -99,6 +99,14 @@ Modules run on:
 
 ---
 
+### **3. Build Docker images**
+
+```bash
+docker build -t black-monitoring-api-server:1.0.0 api-server
+docker build -t black-monitoring-api-watcher:1.0.0 api-watcher
+docker build -t black-monitoring-tcp-watcher:1.0.0 tcp-watcher
+```
+
 ## Email Alert Workflow Summary
 
 1. watcher detects a failure

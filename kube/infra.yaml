@@ -1,0 +1,544 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: black-monitoring
+
+---
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cassandra-init-cql
+  namespace: black-monitoring
+data:
+  init.cql: |
+    CREATE KEYSPACE IF NOT EXISTS monitoring
+    WITH replication = {'class':'SimpleStrategy','replication_factor':1};
+
+    USE monitoring;
+
+    CREATE TABLE IF NOT EXISTS service (
+      uuid timeuuid PRIMARY KEY,
+      service_name text,
+      description text,
+      updated_time timestamp,
+      email text
+    );
+
+    CREATE TABLE IF NOT EXISTS api_scenario (
+      service_uuid timeuuid,
+      scenario_uuid timeuuid,
+      service_name text,
+      url text,
+      method text,
+      headers map<text, text>,
+      requestbody text,
+      description text,
+      created_time timestamp,
+      updated_time timestamp,
+      PRIMARY KEY (service_uuid, scenario_uuid)
+    );
+
+    CREATE TABLE IF NOT EXISTS tcp_scenario (
+      service_uuid timeuuid,
+      scenario_uuid timeuuid,
+      service_name text,
+      ip text,
+      port int,
+      description text,
+      created_time timestamp,
+      updated_time timestamp,
+      PRIMARY KEY (service_uuid, scenario_uuid)
+    );
+
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: cassandra
+  namespace: black-monitoring
+spec:
+  clusterIP: None
+  selector:
+    app: cassandra
+  ports:
+    - name: cql
+      port: 9042
+      targetPort: 9042
+
+---
+
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: cassandra
+  namespace: black-monitoring
+spec:
+  serviceName: cassandra
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cassandra
+  template:
+    metadata:
+      labels:
+        app: cassandra
+    spec:
+      terminationGracePeriodSeconds: 60
+      containers:
+        - name: cassandra
+          image: cassandra:4.1
+          ports:
+            - containerPort: 9042
+              name: cql
+          env:
+            - name: CASSANDRA_CLUSTER_NAME
+              value: "ScenarioDemo"
+            - name: MAX_HEAP_SIZE
+              value: "1G"
+            - name: HEAP_NEWSIZE
+              value: "256M"
+            # single node seed
+            - name: CASSANDRA_SEEDS
+              value: "cassandra-0.cassandra.black-monitoring.svc.cluster.local"
+          readinessProbe:
+            exec:
+              command: ["bash","-lc","cqlsh 127.0.0.1 9042 -e 'describe keyspaces'"]
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 12
+          livenessProbe:
+            exec:
+              command: ["bash","-lc","cqlsh 127.0.0.1 9042 -e 'describe cluster'"]
+            initialDelaySeconds: 60
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 6
+          volumeMounts:
+            - name: cassandra-data
+              mountPath: /var/lib/cassandra
+  volumeClaimTemplates:
+    - metadata:
+        name: cassandra-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 10Gi
+
+---
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: cassandra-schema-init
+  namespace: black-monitoring
+spec:
+  backoffLimit: 10
+  template:
+    metadata:
+      labels:
+        app: cassandra-schema-init
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: cqlsh
+          image: cassandra:4.1
+          volumeMounts:
+            - name: init-cql
+              mountPath: /init
+          command:
+            - bash
+            - -lc
+            - |
+              echo "Waiting for Cassandra..."
+              until cqlsh cassandra.black-monitoring.svc.cluster.local 9042 -e "describe cluster" >/dev/null 2>&1; do
+                echo "  still waiting..."
+                sleep 2
+              done
+              echo "Cassandra is up. Applying schema..."
+              cqlsh cassandra.black-monitoring.svc.cluster.local 9042 -f /init/init.cql
+              echo "Done."
+      volumes:
+        - name: init-cql
+          configMap:
+            name: cassandra-init-cql
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: zookeeper
+  namespace: black-monitoring
+spec:
+  selector:
+    app: zookeeper
+  ports:
+    - name: client
+      port: 2181
+      targetPort: 2181
+
+---
+
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: zookeeper
+  namespace: black-monitoring
+spec:
+  serviceName: zookeeper
+  replicas: 1
+  selector:
+    matchLabels:
+      app: zookeeper
+  template:
+    metadata:
+      labels:
+        app: zookeeper
+    spec:
+      containers:
+        - name: zookeeper
+          image: zookeeper:3.9
+          ports:
+            - containerPort: 2181
+              name: client
+          env:
+            - name: ZOO_4LW_COMMANDS_WHITELIST
+              value: "ruok,stat,conf,cons"
+          readinessProbe:
+            tcpSocket:
+              port: 2181
+            initialDelaySeconds: 5
+            periodSeconds: 5
+
+---
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mimir-config
+  namespace: black-monitoring
+data:
+  single-process-config-blocks.yml: |
+    target: all
+    multitenancy_enabled: true
+
+    server:
+      http_listen_port: 10100
+      grpc_listen_port: 10101
+      grpc_server_max_recv_msg_size: 104857600
+      grpc_server_max_send_msg_size: 104857600
+      grpc_server_max_concurrent_streams: 1000
+
+    distributor:
+      pool:
+        health_check_ingesters: false
+      ring:
+        kvstore:
+          store: inmemory
+
+    ingester_client:
+      grpc_client_config:
+        max_recv_msg_size: 104857600
+        max_send_msg_size: 104857600
+        grpc_compression: gzip
+
+    ingester:
+      ring:
+        final_sleep: 0s
+        num_tokens: 512
+        kvstore:
+          store: inmemory
+        replication_factor: 1
+
+    blocks_storage:
+      backend: filesystem
+      filesystem:
+        dir: /data/tsdb
+      tsdb:
+        dir: /data/tsdb-local
+      bucket_store:
+        sync_dir: /data/tsdb-sync
+
+    api:
+      prometheus_http_prefix: /api/prom
+
+    compactor:
+      data_dir: /data/compactor
+      sharding_ring:
+        kvstore:
+          store: inmemory
+
+    ruler:
+      rule_path: /data/rules
+      enable_api: true
+      ring:
+        kvstore:
+          store: inmemory
+
+    ruler_storage:
+      backend: filesystem
+      filesystem:
+        dir: /data/rule
+
+    store_gateway:
+      sharding_ring:
+        kvstore:
+          store: inmemory
+
+    limits:
+      accept_ha_samples: true
+      out_of_order_time_window: 40d
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: mimir
+  namespace: black-monitoring
+spec:
+  selector:
+    app: mimir
+  ports:
+    - name: http
+      port: 10100
+      targetPort: 10100
+    - name: grpc
+      port: 10101
+      targetPort: 10101
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mimir
+  namespace: black-monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mimir
+  template:
+    metadata:
+      labels:
+        app: mimir
+    spec:
+      containers:
+        - name: mimir
+          image: grafana/mimir:2.11.0
+          args:
+            - "-config.expand-env=true"
+            - "-config.file=/etc/mimir/single-process-config-blocks.yml"
+          ports:
+            - containerPort: 10100
+              name: http
+            - containerPort: 10101
+              name: grpc
+          volumeMounts:
+            - name: mimir-config
+              mountPath: /etc/mimir
+            - name: mimir-data
+              mountPath: /data
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 10100
+            initialDelaySeconds: 10
+            periodSeconds: 10
+      volumes:
+        - name: mimir-config
+          configMap:
+            name: mimir-config
+        - name: mimir-data
+          persistentVolumeClaim:
+            claimName: mimir-data-pvc
+
+---
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mimir-data-pvc
+  namespace: black-monitoring
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 10Gi
+
+---
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mimir-gateway-nginx
+  namespace: black-monitoring
+data:
+  nginx.conf: |
+    events {}
+    http {
+      upstream mimir_upstream {
+        server mimir.black-monitoring.svc.cluster.local:10100;
+      }
+
+      server {
+        listen 10100;
+
+        # Remote write pushes here
+        location /api/v1/push {
+          proxy_pass http://mimir_upstream;
+          proxy_set_header Host $host;
+          proxy_set_header X-Real-IP $remote_addr;
+          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        }
+
+        # Allow querying Mimir endpoints through gateway if needed
+        location / {
+          proxy_pass http://mimir_upstream;
+          proxy_set_header Host $host;
+        }
+      }
+    }
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mimir-gateway
+  namespace: black-monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mimir-gateway
+  template:
+    metadata:
+      labels:
+        app: mimir-gateway
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:alpine
+          ports:
+            - containerPort: 10100
+              name: http
+          volumeMounts:
+            - name: nginx-conf
+              mountPath: /etc/nginx/nginx.conf
+              subPath: nginx.conf
+      volumes:
+        - name: nginx-conf
+          configMap:
+            name: mimir-gateway-nginx
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: mimir-gateway
+  namespace: black-monitoring
+spec:
+  selector:
+    app: mimir-gateway
+  ports:
+    - name: http
+      port: 10100
+      targetPort: 10100
+  type: ClusterIP
+
+---
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-datasources
+  namespace: black-monitoring
+data:
+  datasources.yml: |
+    apiVersion: 1
+    datasources:
+      - name: Mimir
+        type: prometheus
+        access: proxy
+        url: http://mimir-gateway.black-monitoring.svc.cluster.local:10100/api/prom
+        isDefault: true
+        editable: true
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana
+  namespace: black-monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grafana
+  template:
+    metadata:
+      labels:
+        app: grafana
+    spec:
+      containers:
+        - name: grafana
+          image: grafana/grafana:8.0.2
+          ports:
+            - containerPort: 3000
+              name: http
+          env:
+            - name: GF_SECURITY_ADMIN_USER
+              value: "admin"
+            - name: GF_SECURITY_ADMIN_PASSWORD
+              value: "admin"
+          volumeMounts:
+            - name: grafana-data
+              mountPath: /var/lib/grafana
+            - name: grafana-datasources
+              mountPath: /etc/grafana/provisioning/datasources/datasources.yml
+              subPath: datasources.yml
+      volumes:
+        - name: grafana-data
+          persistentVolumeClaim:
+            claimName: grafana-data-pvc
+        - name: grafana-datasources
+          configMap:
+            name: grafana-datasources
+
+---
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: grafana-data-pvc
+  namespace: black-monitoring
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 5Gi
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana
+  namespace: black-monitoring
+spec:
+  selector:
+    app: grafana
+  ports:
+    - name: http
+      port: 3000
+      targetPort: 3000
+  type: ClusterIP
