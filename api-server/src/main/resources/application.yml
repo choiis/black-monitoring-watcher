@@ -5,7 +5,7 @@ spring:
   application:
     name: monitoring-api
   cassandra:
-    contact-points: [ "cassandra" ]
+    contact-points: [ "localhost" ]
     port: 9042
     keyspace-name: monitoring
     local-datacenter: datacenter1

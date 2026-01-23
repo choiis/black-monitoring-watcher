@@ -1,9 +1,9 @@
 server:
-  port: 7010
+  port: 7030
 
 spring:
   application:
-    name: api-watcher
+    name: web-watcher
   cassandra:
     contact-points: [ "localhost" ]
     port: 9042
@@ -11,7 +11,7 @@ spring:
     local-datacenter: datacenter1
     schema-action: none
   codec:
-    max-in-memory-size: 1MB  # 1 * 1024 * 1024
+    max-in-memory-size: 1MB
   mail:
     host: localhost
     port: 1025
@@ -29,3 +29,7 @@ zookeeper:
 
 api-server:
   base-url: http://localhost:7080
+
+selenium:
+  pool-size: 5
+  headless: true

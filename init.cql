@@ -36,6 +36,21 @@ CREATE TABLE IF NOT EXISTS tcp_scenario (
 PRIMARY KEY (service_uuid, scenario_uuid)
 );
 
+
+CREATE TABLE IF NOT EXISTS web_scenario (
+    service_uuid timeuuid,
+    scenario_uuid timeuuid,
+    service_name text,
+    url text,
+    method text,
+    javascript text,
+    loginscript text,
+    description text,
+    created_time timestamp,
+    updated_time timestamp,
+PRIMARY KEY (service_uuid, scenario_uuid)
+);
+
 USE monitoring;
 
 INSERT INTO service (
@@ -935,5 +950,171 @@ INSERT INTO tcp_scenario (
     minTimeuuid('2025-01-01T10:04:00Z'), now(), 'reporting-service',
     '1.0.0.1', 443,
     'Cloudflare HTTPS (1.0.0.1:443)',
+    toTimestamp(now()), toTimestamp(now())
+);
+
+-- Web Scenarios
+INSERT INTO web_scenario (
+    service_uuid, scenario_uuid, service_name, url, method,
+    javascript, loginscript, description, created_time, updated_time
+) VALUES (
+    minTimeuuid('2025-01-01T10:00:00Z'), now(), 'user-service',
+    'https://www.google.com', 'GET',
+    null, null,
+    'Google homepage load test',
+    toTimestamp(now()), toTimestamp(now())
+);
+
+INSERT INTO web_scenario (
+    service_uuid, scenario_uuid, service_name, url, method,
+    javascript, loginscript, description, created_time, updated_time
+) VALUES (
+    minTimeuuid('2025-01-01T10:00:00Z'), now(), 'user-service',
+    'https://www.github.com', 'GET',
+    'return document.title;', null,
+    'GitHub homepage with JS execution',
+    toTimestamp(now()), toTimestamp(now())
+);
+
+INSERT INTO web_scenario (
+    service_uuid, scenario_uuid, service_name, url, method,
+    javascript, loginscript, description, created_time, updated_time
+) VALUES (
+    minTimeuuid('2025-01-01T10:01:00Z'), now(), 'order-service',
+    'https://httpbin.org/html', 'GET',
+    'return document.body.innerText.length;', null,
+    'httpbin HTML page test',
+    toTimestamp(now()), toTimestamp(now())
+);
+
+INSERT INTO web_scenario (
+    service_uuid, scenario_uuid, service_name, url, method,
+    javascript, loginscript, description, created_time, updated_time
+) VALUES (
+    minTimeuuid('2025-01-01T10:02:00Z'), now(), 'payment-service',
+    'https://example.com', 'GET',
+    null, null,
+    'Example.com simple load test',
+    toTimestamp(now()), toTimestamp(now())
+);
+
+INSERT INTO web_scenario (
+    service_uuid, scenario_uuid, service_name, url, method,
+    javascript, loginscript, description, created_time, updated_time
+) VALUES (
+    minTimeuuid('2025-01-01T10:03:00Z'), now(), 'notification-service',
+    'https://www.wikipedia.org', 'GET',
+    'return document.querySelectorAll("a").length;', null,
+    'Wikipedia homepage link count',
+    toTimestamp(now()), toTimestamp(now())
+);
+
+INSERT INTO web_scenario (
+    service_uuid, scenario_uuid, service_name, url, method,
+    javascript, loginscript, description, created_time, updated_time
+) VALUES (
+    minTimeuuid('2025-01-01T10:00:00Z'), now(), 'user-service',
+    'https://www.naver.com', 'GET',
+    'return document.title;', null,
+    'Naver homepage title check',
+    toTimestamp(now()), toTimestamp(now())
+);
+
+INSERT INTO web_scenario (
+    service_uuid, scenario_uuid, service_name, url, method,
+    javascript, loginscript, description, created_time, updated_time
+) VALUES (
+    minTimeuuid('2025-01-01T10:00:00Z'), now(), 'user-service',
+    'https://www.daum.net', 'GET',
+    'return document.querySelectorAll("img").length;', null,
+    'Daum homepage image count',
+    toTimestamp(now()), toTimestamp(now())
+);
+
+INSERT INTO web_scenario (
+    service_uuid, scenario_uuid, service_name, url, method,
+    javascript, loginscript, description, created_time, updated_time
+) VALUES (
+    minTimeuuid('2025-01-01T10:01:00Z'), now(), 'order-service',
+    'https://stackoverflow.com', 'GET',
+    'return document.querySelectorAll("a").length;', null,
+    'StackOverflow link count',
+    toTimestamp(now()), toTimestamp(now())
+);
+
+INSERT INTO web_scenario (
+    service_uuid, scenario_uuid, service_name, url, method,
+    javascript, loginscript, description, created_time, updated_time
+) VALUES (
+    minTimeuuid('2025-01-01T10:01:00Z'), now(), 'order-service',
+    'https://news.ycombinator.com', 'GET',
+    'return document.querySelectorAll(".titleline").length;', null,
+    'Hacker News story count',
+    toTimestamp(now()), toTimestamp(now())
+);
+
+INSERT INTO web_scenario (
+    service_uuid, scenario_uuid, service_name, url, method,
+    javascript, loginscript, description, created_time, updated_time
+) VALUES (
+    minTimeuuid('2025-01-01T10:02:00Z'), now(), 'payment-service',
+    'https://www.reddit.com', 'GET',
+    null, null,
+    'Reddit homepage load test',
+    toTimestamp(now()), toTimestamp(now())
+);
+
+INSERT INTO web_scenario (
+    service_uuid, scenario_uuid, service_name, url, method,
+    javascript, loginscript, description, created_time, updated_time
+) VALUES (
+    minTimeuuid('2025-01-01T10:02:00Z'), now(), 'payment-service',
+    'https://www.amazon.com', 'GET',
+    'return document.getElementById("nav-logo") !== null;', null,
+    'Amazon logo element check',
+    toTimestamp(now()), toTimestamp(now())
+);
+
+INSERT INTO web_scenario (
+    service_uuid, scenario_uuid, service_name, url, method,
+    javascript, loginscript, description, created_time, updated_time
+) VALUES (
+    minTimeuuid('2025-01-01T10:03:00Z'), now(), 'notification-service',
+    'https://www.youtube.com', 'GET',
+    'return document.querySelectorAll("ytd-rich-item-renderer").length;', null,
+    'YouTube video item count',
+    toTimestamp(now()), toTimestamp(now())
+);
+
+INSERT INTO web_scenario (
+    service_uuid, scenario_uuid, service_name, url, method,
+    javascript, loginscript, description, created_time, updated_time
+) VALUES (
+    minTimeuuid('2025-01-01T10:03:00Z'), now(), 'notification-service',
+    'https://www.twitter.com', 'GET',
+    null, null,
+    'Twitter homepage load test',
+    toTimestamp(now()), toTimestamp(now())
+);
+
+INSERT INTO web_scenario (
+    service_uuid, scenario_uuid, service_name, url, method,
+    javascript, loginscript, description, created_time, updated_time
+) VALUES (
+    minTimeuuid('2025-01-01T10:04:00Z'), now(), 'reporting-service',
+    'https://www.linkedin.com', 'GET',
+    'return document.title;', null,
+    'LinkedIn homepage title check',
+    toTimestamp(now()), toTimestamp(now())
+);
+
+INSERT INTO web_scenario (
+    service_uuid, scenario_uuid, service_name, url, method,
+    javascript, loginscript, description, created_time, updated_time
+) VALUES (
+    minTimeuuid('2025-01-01T10:04:00Z'), now(), 'reporting-service',
+    'https://www.medium.com', 'GET',
+    'return document.querySelectorAll("article").length;', null,
+    'Medium article count',
     toTimestamp(now()), toTimestamp(now())
 );
