@@ -1,10 +1,10 @@
 package com.monitor.apibatch.simulator
 
 import com.monitor.api.client.AlertClient
-import com.monitor.apibatch.worker.ApiScenarioBatchWorker
 import com.monitor.api.domain.ApiScenario
 import com.monitor.api.dto.AlertRequest
 import com.monitor.api.mimir.MimirMetricPusher
+import com.monitor.apibatch.worker.ApiScenarioBatchWorker
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpMethod
 import org.springframework.scheduling.annotation.Scheduled

@@ -1,0 +1,15 @@
+spring:
+  main:
+    allow-bean-definition-overriding: true
+  data:
+    cassandra:
+      contact-points: localhost
+      port: 9042
+      keyspace-name: test_keyspace
+      local-datacenter: datacenter1
+
+mimir:
+  url: http://localhost:10100
+
+instance:
+  id: test-instance

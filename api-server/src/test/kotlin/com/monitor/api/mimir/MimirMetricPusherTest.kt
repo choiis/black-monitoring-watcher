@@ -9,13 +9,13 @@ import org.mockito.ArgumentMatchers.any
 import org.mockito.ArgumentMatchers.anyString
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.whenever
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 import org.springframework.http.ResponseEntity
 import org.springframework.web.reactive.function.client.WebClient
 import reactor.core.publisher.Mono
 import reactor.test.StepVerifier
-import java.util.UUID
+import java.util.*
 
 @ExtendWith(MockitoExtension::class)
 class MimirMetricPusherTest {

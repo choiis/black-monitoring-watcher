@@ -5,17 +5,13 @@ import com.monitor.api.domain.ServiceEntity
 import com.monitor.api.utils.MailUtils
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.mockito.ArgumentMatchers.anyString
-import org.mockito.kotlin.any
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.never
-import org.mockito.kotlin.whenever
-import org.mockito.junit.jupiter.MockitoExtension
 import org.junit.jupiter.api.extension.ExtendWith
+import org.mockito.ArgumentMatchers.anyString
+import org.mockito.junit.jupiter.MockitoExtension
+import org.mockito.kotlin.*
 import reactor.core.publisher.Mono
 import reactor.test.StepVerifier
-import java.util.UUID
+import java.util.*
 
 @ExtendWith(MockitoExtension::class)
 class ScenarioFailAlertServiceTest(

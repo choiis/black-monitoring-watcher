@@ -12,7 +12,7 @@ The project is built as a **multi-module Spring Boot (WebFlux) application** wit
 
 ---
 
-## Tech Stack
+## 1. Tech Stack
 
 | Category | Technology | Version |
 |----------|------------|---------|
@@ -31,7 +31,7 @@ The project is built as a **multi-module Spring Boot (WebFlux) application** wit
 
 ---
 
-## Project Structure
+## 2. Project Structure
 
 ```
 black-monitoring-watcher/
@@ -71,7 +71,7 @@ black-monitoring-watcher/
 
 ---
 
-## Features
+## 3. Features
 
 ### Distributed Scenario Execution
 The system executes three types of monitoring scenarios:
@@ -99,7 +99,7 @@ Each scenario collects detailed metrics:
 
 ---
 
-## 📬 Email Alerting on Scenario Failure
+## 4. Email Alerting on Scenario Failure
 
 Whenever any monitoring scenario fails due to:
 
@@ -128,7 +128,7 @@ This enables real‑time failure visibility and rapid operational response.
 
 ---
 
-## Docker Infrastructure
+## 5. Docker Infrastructure
 
 The repository includes a full monitoring stack via **docker-compose**:
 
@@ -157,7 +157,7 @@ UI: **http://localhost:3000**
 
 ---
 
-## How to Run the System
+## 6. How to Run the System
 
 ### **1. Start the Monitoring Stack**
 
@@ -212,7 +212,7 @@ The Kubernetes deployment includes:
 
 ---
 
-## Metrics & Monitoring
+## 7. Metrics & Monitoring
 
 ### Prometheus Metrics Format
 
@@ -244,7 +244,7 @@ Access Grafana at `http://localhost:3000` to visualize:
 
 ---
 
-## Email Alert Workflow Summary
+## 8. Email Alert Workflow Summary
 
 1. watcher detects a failure
 2. sends alert → `/api/v1/alert`
@@ -255,7 +255,7 @@ This ensures immediate notification for degraded or failing scenarios.
 
 ---
 
-## API Endpoints
+## 9. API Endpoints
 
 ### api-server (Port 7080)
 
@@ -305,7 +305,7 @@ This ensures immediate notification for degraded or failing scenarios.
 
 ---
 
-## Cassandra Schema
+## 10. Cassandra Schema
 
 The system uses the following tables in the `monitoring` keyspace:
 
@@ -354,7 +354,7 @@ CREATE TABLE web_scenario (
 
 ---
 
-## Configuration
+## 11. Configuration
 
 ### Environment Variables
 
@@ -378,7 +378,7 @@ CREATE TABLE web_scenario (
 
 ---
 
-## Development
+## 12. Development
 
 ### Prerequisites
 
@@ -419,7 +419,7 @@ CREATE TABLE web_scenario (
 
 ---
 
-## Troubleshooting
+## 13. Troubleshooting
 
 ### Common Issues
 
@@ -445,6 +445,6 @@ curl http://localhost:<port>/actuator/info
 
 ---
 
-## License
+## 14. License
 
 This project is for educational and practice purposes.

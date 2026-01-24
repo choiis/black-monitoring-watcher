@@ -6,7 +6,7 @@ import org.springframework.data.cassandra.core.mapping.CassandraType.Name
 import org.springframework.data.cassandra.core.mapping.PrimaryKeyClass
 import org.springframework.data.cassandra.core.mapping.PrimaryKeyColumn
 import java.io.Serializable
-import java.util.UUID
+import java.util.*
 
 @PrimaryKeyClass
 data class TcpScenarioKey(

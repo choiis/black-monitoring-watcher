@@ -5,7 +5,7 @@ import com.monitor.api.domain.TcpScenarioKey
 import org.springframework.data.cassandra.repository.ReactiveCassandraRepository
 import org.springframework.stereotype.Repository
 import reactor.core.publisher.Flux
-import java.util.UUID
+import java.util.*
 
 @Repository
 interface TcpScenarioReactiveRepository : ReactiveCassandraRepository<TcpScenario, TcpScenarioKey> {

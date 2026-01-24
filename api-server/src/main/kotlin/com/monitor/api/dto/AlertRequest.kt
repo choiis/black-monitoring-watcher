@@ -1,6 +1,6 @@
 package com.monitor.api.dto
 
-import java.util.UUID
+import java.util.*
 
 data class AlertRequest(
     val serviceUuid: UUID,
