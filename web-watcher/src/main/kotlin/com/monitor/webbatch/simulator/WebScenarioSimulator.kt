@@ -14,7 +14,7 @@ import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
-import reactor.core.scheduler.Schedulers
+import reactor.core.scheduler.Scheduler
 import java.net.InetAddress
 import java.net.URI
 import java.time.Duration
@@ -24,7 +24,8 @@ class WebScenarioSimulator(
     private val batchWorker: WebScenarioBatchWorker,
     private val seleniumConfig: SeleniumConfig,
     private val mimirMetricPusher: MimirMetricPusher,
-    private val alertClient: AlertClient
+    private val alertClient: AlertClient,
+    private val virtualThreadScheduler: Scheduler
 ) {
 
     private val log = LoggerFactory.getLogger(WebScenarioSimulator::class.java)
@@ -35,7 +36,7 @@ class WebScenarioSimulator(
         if (scenarios.isEmpty()) return
 
         Flux.fromIterable(scenarios)
-            .flatMap({ simulateScenario(it) }, 1) // concurrency 1 for WebDriver safety
+            .flatMap({ simulateScenario(it) }, seleniumConfig.poolSize) // concurrency based on WebDriver pool size
             .onErrorContinue { ex, obj ->
                 log.warn("Error while simulating Web scenario: {}", obj, ex)
             }
@@ -65,7 +66,7 @@ class WebScenarioSimulator(
         return Mono.fromCallable {
             executeWebScenario(scenario, url, host)
         }
-            .subscribeOn(Schedulers.boundedElastic())
+            .subscribeOn(virtualThreadScheduler)
             .flatMap { result ->
                 pushMetrics(scenario, url, result)
             }

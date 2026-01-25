@@ -1,4 +1,4 @@
-FROM eclipse-temurin:17-jre
+FROM eclipse-temurin:21-jre
 WORKDIR /app
 ARG JAR=build/libs/*.jar
 COPY ${JAR} app.jar

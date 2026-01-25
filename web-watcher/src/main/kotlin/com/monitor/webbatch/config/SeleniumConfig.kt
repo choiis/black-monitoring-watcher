@@ -2,22 +2,44 @@ package com.monitor.webbatch.config
 
 import io.github.bonigarcia.wdm.WebDriverManager
 import jakarta.annotation.PostConstruct
+import jakarta.annotation.PreDestroy
 import org.openqa.selenium.WebDriver
 import org.openqa.selenium.chrome.ChromeDriver
 import org.openqa.selenium.chrome.ChromeOptions
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import reactor.core.scheduler.Scheduler
+import reactor.core.scheduler.Schedulers
 import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
 
 @Configuration
 class SeleniumConfig(
-    @Value("\${selenium.pool-size:3}") private val poolSize: Int,
+    @Value("\${selenium.pool-size:3}") val poolSize: Int,
     @Value("\${selenium.headless:true}") private val headless: Boolean
 ) {
 
     private val log = LoggerFactory.getLogger(SeleniumConfig::class.java)
     private val driverPool = ConcurrentLinkedQueue<WebDriver>()
+    private lateinit var virtualThreadExecutor: ExecutorService
+
+    @Bean
+    fun virtualThreadScheduler(): Scheduler {
+        virtualThreadExecutor = Executors.newVirtualThreadPerTaskExecutor()
+        log.info("Initialized Virtual Thread Scheduler for Selenium operations")
+        return Schedulers.fromExecutorService(virtualThreadExecutor)
+    }
+
+    @PreDestroy
+    fun shutdownExecutor() {
+        if (::virtualThreadExecutor.isInitialized) {
+            virtualThreadExecutor.shutdown()
+            log.info("Virtual Thread Executor shutdown")
+        }
+    }
 
     @PostConstruct
     fun initDriverPool() {

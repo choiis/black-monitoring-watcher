@@ -16,10 +16,10 @@ The project is built as a **multi-module Spring Boot (WebFlux) application** wit
 
 | Category | Technology | Version |
 |----------|------------|---------|
-| **Language** | Kotlin | 1.9.25 |
-| **Runtime** | Java | 17 |
-| **Framework** | Spring Boot | 3.3.4 |
-| **Reactive** | Spring WebFlux | 3.3.4 |
+| **Language** | Kotlin | 2.0.21 |
+| **Runtime** | Java | 21 |
+| **Framework** | Spring Boot | 3.5.0 |
+| **Reactive** | Spring WebFlux | 3.5.0 |
 | **Database** | Apache Cassandra | 4.1 |
 | **Coordination** | Apache Zookeeper | 3.9 |
 | **Zookeeper Client** | Apache Curator | 5.6.0 |
@@ -382,7 +382,7 @@ CREATE TABLE web_scenario (
 
 ### Prerequisites
 
-- Java 17+
+- Java 21+
 - Docker & Docker Compose
 - Gradle 8.x (or use included Gradle wrapper)
 
