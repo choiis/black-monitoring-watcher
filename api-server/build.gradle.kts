@@ -1,6 +1,8 @@
 plugins {
     id("org.springframework.boot")
     id("io.spring.dependency-management")
+    id("org.springframework.cloud.contract") version "4.2.0"
+    id("maven-publish")
     kotlin("jvm")
     kotlin("plugin.spring")
 }
@@ -28,10 +30,27 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-webflux")
     testImplementation("org.springframework:spring-test")
     testImplementation("io.projectreactor:reactor-test")
+    testImplementation("org.springframework.cloud:spring-cloud-starter-contract-verifier")
+    testImplementation("io.rest-assured:spring-web-test-client:5.4.0")
 }
 
 dependencyManagement {
     imports {
         mavenBom("org.springframework.cloud:spring-cloud-dependencies:${property("springCloudVersion")}")
+    }
+}
+
+contracts {
+    testFramework.set(org.springframework.cloud.contract.verifier.config.TestFramework.JUNIT5)
+    testMode.set(org.springframework.cloud.contract.verifier.config.TestMode.WEBTESTCLIENT)
+    baseClassForTests.set("com.monitor.api.contract.AlertContractBase")
+}
+
+publishing {
+    publications {
+        create<MavenPublication>("mavenJava") {
+            artifact(tasks.named("verifierStubsJar"))
+            artifactId = "api-server"
+        }
     }
 }

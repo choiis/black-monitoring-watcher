@@ -25,6 +25,7 @@ dependencies {
     testImplementation("org.mockito:mockito-core:5.12.0")
     testImplementation("org.mockito.kotlin:mockito-kotlin:5.2.1")
     testImplementation("org.jetbrains.kotlin:kotlin-test")
+    testImplementation("org.springframework.cloud:spring-cloud-starter-contract-stub-runner")
 }
 
 dependencyManagement {

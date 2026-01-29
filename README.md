@@ -27,6 +27,7 @@ The project is built as a **multi-module Spring Boot (WebFlux) application** wit
 | **Visualization** | Grafana | 8.0.2 |
 | **Web Automation** | Selenium WebDriver | 4.18.1 |
 | **HTTP Client** | Spring WebClient / OpenFeign | - |
+| **Contract Testing** | Spring Cloud Contract | 4.2.0 |
 | **Build Tool** | Gradle (Kotlin DSL) | 8.x |
 
 ---
@@ -417,9 +418,153 @@ CREATE TABLE web_scenario (
 ./gradlew test
 ```
 
+## 13. Contract Testing (Spring Cloud Contract)
+
+The project uses **Spring Cloud Contract** for Consumer-Driven Contract (CDC) testing between `api-server` (Producer) and `tcp-watcher`/`api-watcher` (Consumers).
+
+### Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                         Contract Testing Flow                        │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│  api-server (Producer)              tcp-watcher / api-watcher        │
+│  ────────────────────              ─────────────────────────         │
+│                                                                      │
+│  1. Contract DSL                                                     │
+│     └── shouldAcceptAlert.groovy                                     │
+│                                                                      │
+│  2. Base Test Class                                                  │
+│     └── AlertContractBase.kt                                         │
+│                                                                      │
+│  3. contractTest task                                                │
+│     └── Generates & runs AlertTest.java                              │
+│                                                                      │
+│  4. verifierStubsJar task                                            │
+│     └── Generates api-server-stubs.jar                               │
+│                                                                      │
+│  5. publishToMavenLocal ─────────────► Local Maven Repository        │
+│                                              │                       │
+│                                              ▼                       │
+│                                    6. StubRunner loads stubs         │
+│                                       └── AlertClientContractTest    │
+│                                                                      │
+│                                    7. AlertClient calls stub server  │
+│                                       └── Verifies contract          │
+│                                                                      │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### Contract Files
+
+| Module | File | Description |
+|--------|------|-------------|
+| api-server | `src/contractTest/resources/contracts/alert/shouldAcceptAlert.groovy` | Contract DSL for `/api/v1/alert` |
+| api-server | `src/test/kotlin/.../contract/AlertContractBase.kt` | Base test class for contract verification |
+| tcp-watcher | `src/test/kotlin/.../contract/AlertClientContractTest.kt` | Consumer contract test |
+| api-watcher | `src/test/kotlin/.../contract/AlertClientContractTest.kt` | Consumer contract test |
+
+### Contract DSL Example
+
+```groovy
+// api-server/src/contractTest/resources/contracts/alert/shouldAcceptAlert.groovy
+Contract.make {
+    name "should_accept_alert"
+    description "Should accept alert request and return 202 Accepted"
+
+    request {
+        method POST()
+        url "/api/v1/alert"
+        headers {
+            contentType applicationJson()
+        }
+        body([
+            serviceUuid: $(consumer(regex('[0-9a-f]{8}-...')), producer('550e8400-...')),
+            scenarioUuid: $(consumer(regex('[0-9a-f]{8}-...')), producer('660e8400-...')),
+            serviceName: $(consumer(regex('.+')), producer('test-service'))
+        ])
+    }
+
+    response {
+        status ACCEPTED()
+    }
+}
+```
+
+### Running Contract Tests
+
+**Step 1: Generate stubs from Producer (api-server)**
+
+```bash
+# Run contract tests and generate stubs
+./gradlew :api-server:contractTest
+
+# Publish stubs to local Maven repository
+./gradlew :api-server:publishToMavenLocal
+```
+
+**Step 2: Run Consumer tests (tcp-watcher, api-watcher)**
+
+```bash
+# Run tcp-watcher contract tests
+./gradlew :tcp-watcher:test --tests "*AlertClientContractTest*"
+
+# Run api-watcher contract tests
+./gradlew :api-watcher:test --tests "*AlertClientContractTest*"
+```
+
+**All-in-one command:**
+
+```bash
+./gradlew :api-server:publishToMavenLocal \
+          :tcp-watcher:test --tests "*ContractTest*" \
+          :api-watcher:test --tests "*ContractTest*"
+```
+
+### Dependencies Added
+
+**api-server (Producer):**
+```kotlin
+// build.gradle.kts
+plugins {
+    id("org.springframework.cloud.contract") version "4.2.0"
+    id("maven-publish")
+}
+
+dependencies {
+    testImplementation("org.springframework.cloud:spring-cloud-starter-contract-verifier")
+    testImplementation("io.rest-assured:spring-web-test-client:5.4.0")
+}
+
+contracts {
+    testFramework.set(TestFramework.JUNIT5)
+    testMode.set(TestMode.WEBTESTCLIENT)
+    baseClassForTests.set("com.monitor.api.contract.AlertContractBase")
+}
+```
+
+**tcp-watcher / api-watcher (Consumer):**
+```kotlin
+// build.gradle.kts
+dependencies {
+    testImplementation("org.springframework.cloud:spring-cloud-starter-contract-stub-runner")
+}
+```
+
+### Benefits of Contract Testing
+
+| Benefit | Description |
+|---------|-------------|
+| **API Compatibility** | Ensures Producer API changes don't break Consumers |
+| **Early Detection** | Catches integration issues before deployment |
+| **Documentation** | Contracts serve as executable API documentation |
+| **Independent Testing** | Consumers can test without running actual Producer |
+| **CI/CD Integration** | Automates contract verification in build pipeline |
+
 ---
 
-## 13. Troubleshooting
+## 14. Troubleshooting
 
 ### Common Issues
 
@@ -445,6 +590,6 @@ curl http://localhost:<port>/actuator/info
 
 ---
 
-## 14. License
+## 15. License
 
 This project is for educational and practice purposes.
